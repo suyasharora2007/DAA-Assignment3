@@ -4,6 +4,7 @@ package daa;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import daa.generator.GraphGenerator;
@@ -49,4 +50,26 @@ class GraphGeneratorTest {
                 () -> GraphGenerator.connectedUndirected(3, 3, 42L)
         );
     }
+    
+    @Test
+    void generatesDirectedGraphWithExpectedEdgeCount() {
+        Graph graph = GraphGenerator.directed(10, 20, 42L);
+
+        assertEquals(10, graph.getVertices());
+        assertTrue(graph.isDirected());
+        assertEquals(20, graph.getEdges().size());
+    }
+
+    @Test
+    void generatesDagWithoutBackwardEdges() {
+        Graph graph = GraphGenerator.dag(10, 20, 42L);
+
+        assertTrue(graph.isDirected());
+        assertEquals(20, graph.getEdges().size());
+
+        for (Graph.Edge edge : graph.getEdges()) {
+            assertTrue(edge.from < edge.to);
+        }
+    }
+
 }
