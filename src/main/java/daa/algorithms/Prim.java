@@ -2,7 +2,6 @@
 package daa.algorithms;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -17,9 +16,12 @@ public class Prim {
         public final long edgeScans;
         public final long comparisons;
 
-        public Result(long totalWeight, List<Graph.Edge> edges,
-                      int components, long edgeScans,
-                      long comparisons) {
+        public Result(
+                long totalWeight,
+                List<Graph.Edge> edges,
+                int components,
+                long edgeScans,
+                long comparisons) {
             this.totalWeight = totalWeight;
             this.edges = edges;
             this.components = components;
@@ -31,18 +33,32 @@ public class Prim {
     public static Result run(Graph graph) {
         if (graph.isDirected()) {
             throw new IllegalArgumentException(
-                    "Prim requires an undirected graph"
+                "Prim requires an undirected graph"
             );
         }
 
         int n = graph.getVertices();
         boolean[] visited = new boolean[n];
 
-        PriorityQueue<Graph.Edge> queue = new PriorityQueue<>(
-                Comparator.comparingInt(edge -> edge.weight)
+        List<Graph.Edge> mstEdges = new ArrayList<>();
+        PriorityQueue<Graph.Edge> pq = new PriorityQueue<>(
+            (a, b) -> {
+                int weightCompare = Integer.compare(a.weight, b.weight);
+
+                if (weightCompare != 0) {
+                    return weightCompare;
+                }
+
+                int fromCompare = Integer.compare(a.from, b.from);
+
+                if (fromCompare != 0) {
+                    return fromCompare;
+                }
+
+                return Integer.compare(a.to, b.to);
+            }
         );
 
-        List<Graph.Edge> mstEdges = new ArrayList<>();
         long totalWeight = 0;
         long edgeScans = 0;
         long comparisons = 0;
@@ -57,37 +73,41 @@ public class Prim {
             visited[start] = true;
 
             for (Graph.Edge edge : graph.getNeighbors(start)) {
-                queue.offer(edge);
-            }
-
-            while (!queue.isEmpty()) {
-                Graph.Edge edge = queue.poll();
+                edgeScans++;
                 comparisons++;
 
-                if (visited[edge.to]) {
+                if (!visited[edge.to]) {
+                    pq.offer(edge);
+                }
+            }
+
+            while (!pq.isEmpty()) {
+                Graph.Edge edge = pq.poll();
+                int next = edge.to;
+
+                comparisons++;
+
+                if (visited[next]) {
                     continue;
                 }
 
-                visited[edge.to] = true;
+                visited[next] = true;
                 mstEdges.add(edge);
                 totalWeight += edge.weight;
 
-                for (Graph.Edge next : graph.getNeighbors(edge.to)) {
+                for (Graph.Edge adjacent : graph.getNeighbors(next)) {
                     edgeScans++;
+                    comparisons++;
 
-                    if (!visited[next.to]) {
-                        queue.offer(next);
+                    if (!visited[adjacent.to]) {
+                        pq.offer(adjacent);
                     }
                 }
             }
         }
 
         return new Result(
-                totalWeight,
-                mstEdges,
-                components,
-                edgeScans,
-                comparisons
+            totalWeight, mstEdges, components, edgeScans, comparisons
         );
     }
 }

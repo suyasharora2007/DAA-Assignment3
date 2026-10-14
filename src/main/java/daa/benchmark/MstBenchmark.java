@@ -27,7 +27,7 @@ public class MstBenchmark {
             );
 
             Graph graph = GraphGenerator.connectedUndirected(
-                    vertices, extraEdges, 42L
+                    vertices, vertices - 1 + extraEdges, new java.util.Random(42)
             );
 
             long start = System.nanoTime();

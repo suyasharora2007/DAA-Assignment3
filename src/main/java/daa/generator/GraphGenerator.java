@@ -1,130 +1,126 @@
-
 package daa.generator;
-
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
 
 import daa.graph.Graph;
 
+import java.util.Random;
+
 public final class GraphGenerator {
 
-    private GraphGenerator() {
-    }
+    private GraphGenerator() {}
 
-    public static Graph connectedUndirected(
-            int vertices, int extraEdges, long seed) {
-
-        validate(vertices, extraEdges);
-
-        long maxEdges = (long) vertices * (vertices - 1) / 2;
-
-        if (extraEdges > maxEdges - (vertices - 1L)) {
-            throw new IllegalArgumentException("Too many edges requested");
+    /**
+     * Generates the assignment-specified connected undirected graph.
+     * The supplied Random must be seeded with 42 for reference results.
+     */
+    public static Graph connectedUndirected(int n, int m, Random rnd) {
+        validateUndirected(n, m);
+        if (m < n - 1) {
+            throw new IllegalArgumentException("A connected graph needs at least n-1 edges");
         }
 
-        Graph graph = new Graph(vertices, false);
-        Random random = new Random(seed);
-        Set<Long> used = new HashSet<>();
+        Graph graph = new Graph(n, false);
+        int[] perm = shuffledIdentity(n, rnd);
 
-        for (int v = 1; v < vertices; v++) {
-            int parent = random.nextInt(v);
-            addUniqueUndirectedEdge(
-                    graph, used, parent, v, random.nextInt(100) + 1);
+        for (int i = 1; i < n; i++) {
+            int a = perm[rnd.nextInt(i)];
+            int b = perm[i];
+            graph.addEdge(a, b, 1 + rnd.nextInt(1000));
         }
 
-        int remaining = extraEdges;
-
-        while (remaining > 0) {
-            int from = random.nextInt(vertices);
-            int to = random.nextInt(vertices);
-
-            if (from == to) {
-                continue;
+        while (graph.getEdgeCount() < m) {
+            int a = rnd.nextInt(n);
+            int b = rnd.nextInt(n);
+            while (b == a) {
+                b = rnd.nextInt(n);
             }
-
-            long key = undirectedKey(from, to);
-
-            if (used.add(key)) {
-                graph.addEdge(from, to, random.nextInt(100) + 1);
-                remaining--;
-            }
+            graph.addEdge(a, b, 1 + rnd.nextInt(1000));
         }
 
         return graph;
     }
 
-    public static Graph directed(int vertices, int edges, long seed) {
-        validate(vertices, edges);
+    /** Generates the assignment-specified directed graph. */
+    public static Graph directed(int n, int m, Random rnd) {
+        validateDirected(n, m);
+        Graph graph = new Graph(n, true);
 
-        long maxEdges = (long) vertices * (vertices - 1);
+        while (graph.getEdgeCount() < m) {
+            int a = rnd.nextInt(n);
+            int b = rnd.nextInt(n);
+            while (b == a) {
+                b = rnd.nextInt(n);
+            }
+            graph.addEdge(a, b, 1 + rnd.nextInt(1000));
+        }
 
-        if (edges > maxEdges) {
+        return graph;
+    }
+
+    /** Generates the assignment-specified DAG using a random rank ordering. */
+    public static Graph dag(int n, int m, Random rnd) {
+        validateDirected(n, m);
+        long maxEdges = (long) n * (n - 1) / 2;
+        if (m > maxEdges) {
+            throw new IllegalArgumentException("A DAG cannot have more than n(n-1)/2 edges");
+        }
+
+        Graph graph = new Graph(n, true);
+        int[] rank = shuffledIdentity(n, rnd);
+
+        while (graph.getEdgeCount() < m) {
+            int a = rnd.nextInt(n);
+            int b = rnd.nextInt(n);
+            while (b == a) {
+                b = rnd.nextInt(n);
+            }
+
+            if (rank[a] > rank[b]) {
+                int temp = a;
+                a = b;
+                b = temp;
+            }
+
+            graph.addEdge(a, b, 1 + rnd.nextInt(1000));
+        }
+
+        return graph;
+    }
+
+    private static int[] shuffledIdentity(int n, Random rnd) {
+        int[] perm = new int[n];
+        for (int i = 0; i < n; i++) {
+            perm[i] = i;
+        }
+
+        for (int i = n - 1; i > 0; i--) {
+            int j = rnd.nextInt(i + 1);
+            int temp = perm[i];
+            perm[i] = perm[j];
+            perm[j] = temp;
+        }
+
+        return perm;
+    }
+
+    private static void validateUndirected(int n, int m) {
+        if (n < 1 || m < 0) {
+            throw new IllegalArgumentException("Invalid graph size");
+        }
+        long max = (long) n * (n - 1) / 2;
+        // The assignment generator permits parallel edges, so the practical
+        // upper bound for m is not the simple-graph maximum.
+        if (m < n - 1) {
+            throw new IllegalArgumentException("Connected graph needs at least n-1 edges");
+        }
+    }
+
+    private static void validateDirected(int n, int m) {
+        if (n < 1 || m < 0) {
+            throw new IllegalArgumentException("Invalid graph size");
+        }
+        long max = (long) n * (n - 1);
+        if (m > max) {
             throw new IllegalArgumentException("Too many directed edges");
-        }
-
-        Graph graph = new Graph(vertices, true);
-        Random random = new Random(seed);
-        Set<Long> used = new HashSet<>();
-
-        while (used.size() < edges) {
-            int from = random.nextInt(vertices);
-            int to = random.nextInt(vertices);
-
-            if (from != to && used.add(directedKey(from, to))) {
-                graph.addEdge(from, to, random.nextInt(100) + 1);
-            }
-        }
-
-        return graph;
-    }
-
-    public static Graph dag(int vertices, int edges, long seed) {
-        validate(vertices, edges);
-
-        long maxEdges = (long) vertices * (vertices - 1) / 2;
-
-        if (edges > maxEdges) {
-            throw new IllegalArgumentException("Too many DAG edges");
-        }
-
-        Graph graph = new Graph(vertices, true);
-        Random random = new Random(seed);
-        Set<Long> used = new HashSet<>();
-
-        while (used.size() < edges) {
-            int from = random.nextInt(vertices);
-            int to = random.nextInt(vertices);
-
-            if (from < to && used.add(directedKey(from, to))) {
-                graph.addEdge(from, to, random.nextInt(100) + 1);
-            }
-        }
-
-        return graph;
-    }
-
-    private static void addUniqueUndirectedEdge(
-            Graph graph, Set<Long> used, int from, int to, int weight) {
-
-        used.add(undirectedKey(from, to));
-        graph.addEdge(from, to, weight);
-    }
-
-    private static long undirectedKey(int from, int to) {
-        int low = Math.min(from, to);
-        int high = Math.max(from, to);
-        return ((long) low << 32) | (high & 0xffffffffL);
-    }
-
-    private static long directedKey(int from, int to) {
-        return ((long) from << 32) | (to & 0xffffffffL);
-    }
-
-    private static void validate(int vertices, int edges) {
-        if (vertices < 1 || edges < 0) {
-            throw new IllegalArgumentException(
-                    "Vertices must be positive and edges non-negative");
         }
     }
 }

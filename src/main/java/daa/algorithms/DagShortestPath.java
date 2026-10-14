@@ -2,7 +2,6 @@
 package daa.algorithms;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,18 +14,25 @@ public class DagShortestPath {
         public final int[] parent;
         public final List<Integer> topologicalOrder;
         public final long edgeScans;
+        public final long comparisons;
 
-        public Result(long[] distances, int[] parent,
-                      List<Integer> topologicalOrder, long edgeScans) {
+        public Result(
+                long[] distances,
+                int[] parent,
+                List<Integer> topologicalOrder,
+                long edgeScans,
+                long comparisons) {
             this.distances = distances;
             this.parent = parent;
             this.topologicalOrder = topologicalOrder;
             this.edgeScans = edgeScans;
+            this.comparisons = comparisons;
         }
 
         public List<Integer> getPathTo(int target) {
             if (target < 0 || target >= distances.length) {
-                throw new IllegalArgumentException("Invalid target");
+                throw new IllegalArgumentException(
+                        "Target vertex is out of range.");
             }
 
             if (distances[target] == Long.MAX_VALUE) {
@@ -49,56 +55,72 @@ public class DagShortestPath {
     public static Result run(Graph graph) {
         if (!graph.isDirected()) {
             throw new IllegalArgumentException(
-                    "DAG shortest paths require a directed graph"
-            );
+                    "DAG shortest path requires a directed graph.");
+        }
+
+        Kahn.Result topologicalResult = Kahn.run(graph);
+
+        if (topologicalResult.hasCycle) {
+            throw new IllegalArgumentException(
+                    "Shortest paths require a directed acyclic graph.");
         }
 
         int n = graph.getVertices();
-        Kahn.Result topo = Kahn.run(graph);
-
-        if (topo.hasCycle) {
-            throw new IllegalArgumentException(
-                    "Shortest paths require a DAG"
-            );
-        }
 
         long[] distances = new long[n];
         int[] parent = new int[n];
-        int[] inDegree = new int[n];
 
-        Arrays.fill(distances, Long.MAX_VALUE);
-        Arrays.fill(parent, -1);
+        for (int i = 0; i < n; i++) {
+            distances[i] = Long.MAX_VALUE;
+            parent[i] = -1;
+        }
+
+        // Every source vertex starts with distance zero.
+        int[] indegree = new int[n];
 
         for (int u = 0; u < n; u++) {
             for (Graph.Edge edge : graph.getNeighbors(u)) {
-                inDegree[edge.to]++;
+                indegree[edge.to]++;
             }
         }
 
-        for (int v = 0; v < n; v++) {
-            if (inDegree[v] == 0) {
-                distances[v] = 0;
+        for (int vertex = 0; vertex < n; vertex++) {
+            if (indegree[vertex] == 0) {
+                distances[vertex] = 0;
             }
         }
 
         long edgeScans = 0;
+        long comparisons = 0;
 
-        for (int u : topo.order) {
+        // Relax edges in topological order.
+        for (int u : topologicalResult.order) {
+            comparisons++;
+
             if (distances[u] == Long.MAX_VALUE) {
                 continue;
             }
 
             for (Graph.Edge edge : graph.getNeighbors(u)) {
                 edgeScans++;
+
+                int v = edge.to;
                 long candidate = distances[u] + edge.weight;
 
-                if (candidate < distances[edge.to]) {
-                    distances[edge.to] = candidate;
-                    parent[edge.to] = u;
+                comparisons++;
+
+                if (candidate < distances[v]) {
+                    distances[v] = candidate;
+                    parent[v] = u;
                 }
             }
         }
 
-        return new Result(distances, parent, topo.order, edgeScans);
+        return new Result(
+                distances,
+                parent,
+                topologicalResult.order,
+                edgeScans,
+                comparisons);
     }
 }

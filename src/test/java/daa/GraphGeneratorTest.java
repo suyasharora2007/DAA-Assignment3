@@ -1,75 +1,70 @@
-
 package daa;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 import daa.generator.GraphGenerator;
 import daa.graph.Graph;
+import org.junit.jupiter.api.Test;
+
+import java.util.Random;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class GraphGeneratorTest {
-
     @Test
     void generatesConnectedGraphWithExpectedEdgeCount() {
-        int vertices = 10;
-        int extraEdges = 5;
-
-        Graph graph = GraphGenerator.connectedUndirected(
-                vertices, extraEdges, 42L
-        );
-
-        assertEquals(vertices, graph.getVertices());
+        Graph graph = GraphGenerator.connectedUndirected(10, 14, new Random(42));
+        assertEquals(10, graph.getVertices());
         assertFalse(graph.isDirected());
-        assertEquals(vertices - 1 + extraEdges, graph.getEdges().size());
+        assertEquals(14, graph.getEdgeCount());
     }
 
     @Test
     void sameSeedProducesSameEdges() {
-        Graph first = GraphGenerator.connectedUndirected(10, 5, 42L);
-        Graph second = GraphGenerator.connectedUndirected(10, 5, 42L);
-
-        assertEquals(first.getEdges().size(), second.getEdges().size());
-
-        for (int i = 0; i < first.getEdges().size(); i++) {
-            Graph.Edge a = first.getEdges().get(i);
-            Graph.Edge b = second.getEdges().get(i);
-
-            assertEquals(a.from, b.from);
-            assertEquals(a.to, b.to);
-            assertEquals(a.weight, b.weight);
+        Graph a = GraphGenerator.connectedUndirected(20, 50, new Random(42));
+        Graph b = GraphGenerator.connectedUndirected(20, 50, new Random(42));
+        assertEquals(a.getEdgeCount(), b.getEdgeCount());
+        for (int i = 0; i < a.getEdges().size(); i++) {
+            Graph.Edge x = a.getEdges().get(i), y = b.getEdges().get(i);
+            assertEquals(x.from, y.from);
+            assertEquals(x.to, y.to);
+            assertEquals(x.weight, y.weight);
         }
     }
 
     @Test
-    void rejectsImpossibleEdgeCount() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> GraphGenerator.connectedUndirected(3, 3, 42L)
-        );
-    }
-    
-    @Test
     void generatesDirectedGraphWithExpectedEdgeCount() {
-        Graph graph = GraphGenerator.directed(10, 20, 42L);
-
-        assertEquals(10, graph.getVertices());
+        Graph graph = GraphGenerator.directed(10, 20, new Random(42));
         assertTrue(graph.isDirected());
-        assertEquals(20, graph.getEdges().size());
+        assertEquals(20, graph.getEdgeCount());
     }
 
     @Test
     void generatesDagWithoutBackwardEdges() {
-        Graph graph = GraphGenerator.dag(10, 20, 42L);
-
+        Graph graph = GraphGenerator.dag(20, 50, new Random(42));
         assertTrue(graph.isDirected());
-        assertEquals(20, graph.getEdges().size());
+        assertEquals(50, graph.getEdgeCount());
 
-        for (Graph.Edge edge : graph.getEdges()) {
-            assertTrue(edge.from < edge.to);
-        }
+        // A graph generated from a rank ordering must be acyclic.
+        KahnResultHelper.assertAcyclic(graph);
     }
 
+    @Test
+    void rejectsImpossibleConnectedGraph() {
+        assertThrows(IllegalArgumentException.class,
+                () -> GraphGenerator.connectedUndirected(3, 2, new Random(42)));
+    }
+
+    private static class KahnResultHelper {
+        static void assertAcyclic(Graph graph) {
+            int[] indegree = new int[graph.getVertices()];
+            for (Graph.Edge e : graph.getEdges()) indegree[e.to]++;
+            java.util.ArrayDeque<Integer> q = new java.util.ArrayDeque<>();
+            for (int i = 0; i < indegree.length; i++) if (indegree[i] == 0) q.add(i);
+            int count = 0;
+            while (!q.isEmpty()) {
+                int u = q.remove(); count++;
+                for (Graph.Edge e : graph.getNeighbors(u)) if (--indegree[e.to] == 0) q.add(e.to);
+            }
+            assertEquals(graph.getVertices(), count);
+        }
+    }
 }

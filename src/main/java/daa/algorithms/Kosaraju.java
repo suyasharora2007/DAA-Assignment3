@@ -3,7 +3,6 @@ package daa.algorithms;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
@@ -16,15 +15,13 @@ public class Kosaraju {
         public final long edgeScans;
         public final int maxDepth;
 
-        public Result(List<List<Integer>> components,
-                      long edgeScans, int maxDepth) {
+        public Result(
+                List<List<Integer>> components,
+                long edgeScans,
+                int maxDepth) {
             this.components = components;
             this.edgeScans = edgeScans;
             this.maxDepth = maxDepth;
-        }
-
-        public int count() {
-            return components.size();
         }
     }
 
@@ -38,36 +35,45 @@ public class Kosaraju {
     }
 
     public static Result run(Graph graph) {
+        if (!graph.isDirected()) {
+            throw new IllegalArgumentException(
+                "Kosaraju requires a directed graph"
+            );
+        }
+
         int n = graph.getVertices();
         boolean[] visited = new boolean[n];
-        List<Integer> finishOrder = new ArrayList<>();
+        List<Integer> finishOrder = new ArrayList<>(n);
+
         long edgeScans = 0;
         int maxDepth = 0;
 
-        // First pass: iterative DFS and finishing order.
+        // First DFS pass: compute finishing order iteratively.
         for (int start = 0; start < n; start++) {
             if (visited[start]) {
                 continue;
             }
 
             Deque<Frame> stack = new ArrayDeque<>();
-            stack.push(new Frame(start));
             visited[start] = true;
+            stack.push(new Frame(start));
             maxDepth = Math.max(maxDepth, stack.size());
 
             while (!stack.isEmpty()) {
                 Frame frame = stack.peek();
                 List<Graph.Edge> neighbors =
-                        graph.getNeighbors(frame.vertex);
+                    graph.getNeighbors(frame.vertex);
 
                 if (frame.nextNeighbor < neighbors.size()) {
                     Graph.Edge edge =
-                            neighbors.get(frame.nextNeighbor++);
-                    edgeScans++;
+                        neighbors.get(frame.nextNeighbor++);
 
-                    if (!visited[edge.to]) {
-                        visited[edge.to] = true;
-                        stack.push(new Frame(edge.to));
+                    edgeScans++;
+                    int next = edge.to;
+
+                    if (!visited[next]) {
+                        visited[next] = true;
+                        stack.push(new Frame(next));
                         maxDepth = Math.max(maxDepth, stack.size());
                     }
                 } else {
@@ -77,35 +83,37 @@ public class Kosaraju {
             }
         }
 
-        // Build the reversed graph.
+        // Build the transposed graph.
         Graph reversed = new Graph(n, true);
 
         for (Graph.Edge edge : graph.getEdges()) {
             reversed.addEdge(edge.to, edge.from, edge.weight);
         }
 
-        // Second pass: explore in reverse finishing order.
-        Collections.reverse(finishOrder);
-        visited = new boolean[n];
+        // Second DFS pass: collect strongly connected components.
 
+        visited = new boolean[n];
         List<List<Integer>> components = new ArrayList<>();
 
-        for (int start : finishOrder) {
+        for (int i = finishOrder.size() - 1; i >= 0; i--) {
+            int start = finishOrder.get(i);
+
             if (visited[start]) {
                 continue;
             }
 
             List<Integer> component = new ArrayList<>();
             Deque<Integer> stack = new ArrayDeque<>();
+
             stack.push(start);
             visited[start] = true;
             maxDepth = Math.max(maxDepth, stack.size());
 
             while (!stack.isEmpty()) {
-                int vertex = stack.pop();
-                component.add(vertex);
+                int current = stack.pop();
+                component.add(current);
 
-                for (Graph.Edge edge : reversed.getNeighbors(vertex)) {
+                for (Graph.Edge edge : reversed.getNeighbors(current)) {
                     edgeScans++;
 
                     if (!visited[edge.to]) {

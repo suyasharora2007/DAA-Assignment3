@@ -1,0 +1,26 @@
+warning: in the working copy of 'REPORT.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'results/benchmark.csv', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/daa/algorithms/Kahn.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/daa/benchmark/BenchmarkRunner.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/daa/benchmark/MstBenchmark.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/java/daa/generator/GraphGenerator.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/test/java/daa/DSUTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/test/java/daa/DagShortestPathTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/test/java/daa/GraphGeneratorTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/test/java/daa/MSTTest.java', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/test/java/daa/TopologicalSortTest.java', LF will be replaced by CRLF the next time Git touches it
+ REPORT.md                                         | 152 [32m+++++++++[m[31m-----[m
+ results/benchmark.csv                             | 100 [32m++++[m[31m-----[m
+ src/main/java/daa/algorithms/DagShortestPath.java |  70 [32m++++[m[31m---[m
+ src/main/java/daa/algorithms/Kahn.java            |  50 [32m+++[m[31m--[m
+ src/main/java/daa/algorithms/Kosaraju.java        |  54 [32m++[m[31m---[m
+ src/main/java/daa/algorithms/Prim.java            |  62 [32m++++[m[31m--[m
+ src/main/java/daa/benchmark/BenchmarkRunner.java  | 236 [32m+++++++++++++[m[31m---------[m
+ src/main/java/daa/benchmark/MstBenchmark.java     |   2 [32m+[m[31m-[m
+ src/main/java/daa/generator/GraphGenerator.java   | 168 [32m++++++++[m[31m-------[m
+ src/test/java/daa/DSUTest.java                    |  54 [32m+++[m[31m--[m
+ src/test/java/daa/DagShortestPathTest.java        |  85 [32m++++[m[31m----[m
+ src/test/java/daa/GraphGeneratorTest.java         |  89 [32m++++[m[31m----[m
+ src/test/java/daa/MSTTest.java                    |  94 [32m++++[m[31m-----[m
+ src/test/java/daa/TopologicalSortTest.java        |  42 [32m+[m[31m---[m
+ 14 files changed, 686 insertions(+), 572 deletions(-)
